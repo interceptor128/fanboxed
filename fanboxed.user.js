@@ -126,7 +126,7 @@ const LOCALES = {
 
     "download.restricted": "記事の閲覧が制限されています",
     "download.failed": "'{url}'のダウンロードに失敗しました",
-    "download.error": "ダウンロード中にエラーが発生しました：{error}",
+    "download.error": "「{title}」のダウンロード中にエラーが発生しました：{error}",
 
     "dl_button.start": "ダウンロード",
     "dl_button.pending": "ダウンロード待機中（残り{pending}件）",
@@ -154,7 +154,7 @@ const LOCALES = {
 
     "download.restricted": "The post is restricted",
     "download.failed": "Failed to download '{url}'",
-    "download.error": "Error occured during download: {error}",
+    "download.error": "Error occured during download of \"{title}\": {error}",
 
     "dl_button.start": "Download",
     "dl_button.pending": "Pending downloads ({pending} remaining)",
@@ -602,7 +602,7 @@ const DownloadManager = new class {
       });
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
-      throw new Error(localize("download.error", { error }));
+      throw new Error(localize("download.error", { title: info.title, error }));
     }
 
     // fire the download
