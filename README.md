@@ -6,9 +6,9 @@ Fanboxの各記事をZIPファイルとしてダウンロードするための�
 
 ## インストール
 
-1. [Greasemonkey]（Firefoxのみ）・[Violentmonkey]・[Tampermonkey]のうち好きな拡張機能をインストールします
+1. [Violentmonkey]・[Tampermonkey]のうち好きな拡張機能をインストールします
 1. [fanboxed.user.js]を開きます
-1. Greasemonkey（またはViolentmonkey・Tampermonkey）の画面が開くので、画面に従ってインストールしてください
+1. Violentmonkey・Tampermonkeyの画面が開くので画面に従ってインストールしてください
 
 ## 使い方
 
@@ -88,7 +88,10 @@ AFTER
 // @require     https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js
 ```
 
-[Greasemonkey]: https://addons.mozilla.org/ja/firefox/addon/greasemonkey/
+### Firefoxのコンテナタブでダウンロードできない
+
+Greasemonkeyのバグのようです。[Violentmonkey]など別の拡張機能を使ってください。
+
 [Violentmonkey]: https://violentmonkey.github.io/
 [Tampermonkey]: https://www.tampermonkey.net/
 [fanboxed.user.js]: https://raw.githubusercontent.com/aznhe21/fanboxed/master/fanboxed.user.js
