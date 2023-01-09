@@ -91,6 +91,7 @@ class Prefs {
  * @typedef {{
  *   "format.value_not_found": string,
  *   "format.invalid_spec": string,
+ *   "format.invalid_type": string,
  *   "api.failed": string,
  *   "api.error": string,
  *   "download.restricted": string,
@@ -118,6 +119,7 @@ const LOCALES = {
   "ja": {
     "format.value_not_found": "'{name}'という名前の値はありません",
     "format.invalid_spec": "'{spec}'は形式化文字列として不正です",
+    "format.invalid_type": "形式化文字列'{spec}'に型'{type}'は合致しません",
 
     "api.failed": "API呼び出しに失敗しました",
     "api.error": "API呼び出しに失敗しました：{error}",
@@ -129,8 +131,8 @@ const LOCALES = {
     "dl_button.start": "ダウンロード",
     "dl_button.pending": "ダウンロード待機中（残り{pending}件）",
     "dl_button.preparing": "ダウンロード準備中...",
-    "dl_button.downloading": "ダウンロード中... （{current} / {total}）",
-    "dl_button.generating_zip": "ZIPを生成中...",
+    "dl_button.downloading": "ダウンロード中...（{current} / {total}）",
+    "dl_button.generating_zip": "ZIPを生成中...（{percent:.0f}%）",
 
     "prefs_dialog.title": "Fanboxedの設定",
     "prefs_dialog.cancel": "キャンセル",
@@ -145,6 +147,7 @@ const LOCALES = {
   "en": {
     "format.value_not_found": "No value named '{name}'",
     "format.invalid_spec": "Invalid format '{spec}'",
+    "format.invalid_type": "Type '{type}' does not match for '{spec}'",
 
     "api.failed": "Failed to call an API",
     "api.error": "Failed to call an API: {error}",
@@ -157,7 +160,7 @@ const LOCALES = {
     "dl_button.pending": "Pending downloads ({pending} remaining)",
     "dl_button.preparing": "Preparing to download...",
     "dl_button.downloading": "Downloading... ({current} / {total})",
-    "dl_button.generating_zip": "Generating ZIP...",
+    "dl_button.generating_zip": "Generating ZIP... ({percent:0f} %)",
 
     "prefs_dialog.title": "Fanboxed Preferences",
     "prefs_dialog.cancel": "Cancel",
@@ -215,7 +218,7 @@ function sleep(ms) {
 
 /**
  * @param {string} fmt
- * @param {Record.<string, any>} obj
+ * @param {Record.<string, unknown>} obj
  * @returns {string}
  */
 function easyFormat(fmt, obj) {
@@ -232,15 +235,28 @@ function easyFormat(fmt, obj) {
 
       const v = obj[name];
       if (spec === undefined) {
-        return v;
+        return String(v);
       }
 
-      if (!/^0\d+$/.test(spec)) {
-        throw new Error(localize("format.invalid_spec", { spec }));
+      let m;
+      if (/^0\d+$/.test(spec)) {
+        if (typeof v !== "number") {
+          throw new Error(localize("format.invalid_type", { spec, type: typeof v }));
+        }
+        const n = Number.parseInt(spec, 10);
+        return v.toString().padStart(n, "0");
+      }
+      if ((m = spec.match(/^\.(\d+)f$/))) {
+        if (typeof v !== "number") {
+          throw new Error(localize("format.invalid_type", { spec, type: typeof v }));
+        }
+
+        // {foo:.2f}
+        const n = Number.parseInt(m[1], 10);
+        return v.toFixed(n);
       }
 
-      const n = Number.parseInt(spec, 10);
-      return v.toString().padStart(n, "0");
+      throw new Error(localize("format.invalid_spec", { spec }));
     },
   );
 }
@@ -333,8 +349,8 @@ const DownloadManager = new class {
      * @type {Array.<DownloadObserver>}
      */
     this.observers = [];
-    /** @type {{ done: number; total: number; }} */
-    this.currentStatus = { done: 0, total: 0 };
+    /** @type {{ done: number; total: number; zip: number; }} */
+    this.currentStatus = { done: 0, total: 0, zip: 0 };
   }
 
   /**
@@ -537,7 +553,7 @@ const DownloadManager = new class {
    * @returns {Promise.<void>}
    */
   async _downloadPost(postId) {
-    this.currentStatus = { done: 0, total: Infinity };
+    this.currentStatus = { done: 0, total: Infinity, zip: 0 };
 
     const info = await this.requestInfo(postId);
     this.currentStatus.total = info.images.length;
@@ -580,7 +596,10 @@ const DownloadManager = new class {
         this._notifyProgress(postId);
       }
 
-      bin = await zip.generateAsync({ type: "blob" });
+      bin = await zip.generateAsync({ type: "blob" }, metadata => {
+        this.currentStatus.zip = metadata.percent;
+        this._notifyProgress(postId);
+      });
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
       throw new Error(localize("download.error", { error }));
@@ -632,12 +651,12 @@ class DownloadButton {
         break;
 
       case 0: {
-        const { done, total } = DownloadManager.currentStatus;
+        const { done, total, zip } = DownloadManager.currentStatus;
         this.button.textContent = total === Infinity
           ? localize("dl_button.preparing")
           : done < total
             ? localize("dl_button.downloading", { current: done + 1, total })
-            : localize("dl_button.generating_zip");
+            : localize("dl_button.generating_zip", { percent: zip });
         this.button.disabled = true;
         break;
       }
