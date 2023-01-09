@@ -98,6 +98,7 @@ class Prefs {
  *   "download.failed": string,
  *   "download.error": string,
  *   "dl_button.start": string,
+ *   "dl_button.cancel": string,
  *   "dl_button.pending": string,
  *   "dl_button.preparing": string,
  *   "dl_button.downloading": string,
@@ -129,6 +130,7 @@ const LOCALES = {
     "download.error": "「{title}」のダウンロード中にエラーが発生しました：{error}",
 
     "dl_button.start": "ダウンロード",
+    "dl_button.cancel": "「{title}」のダウンロードをキャンセルしますか？",
     "dl_button.pending": "ダウンロード待機中（残り{pending}件）",
     "dl_button.preparing": "ダウンロード準備中...",
     "dl_button.downloading": "ダウンロード中...（{current} / {total}）",
@@ -157,6 +159,7 @@ const LOCALES = {
     "download.error": "Error occured during download of \"{title}\": {error}",
 
     "dl_button.start": "Download",
+    "dl_button.cancel": "Do you want to cancel the download of \"{title}\"?",
     "dl_button.pending": "Pending downloads ({pending} remaining)",
     "dl_button.preparing": "Preparing to download...",
     "dl_button.downloading": "Downloading... ({current} / {total})",
@@ -363,8 +366,15 @@ const DownloadManager = new class {
   /**
    * @param {number} postId
    */
+  isPending(postId) {
+    return this.queue.indexOf(postId) >= 0;
+  }
+
+  /**
+   * @param {number} postId
+   */
   download(postId) {
-    if (this.queue.indexOf(postId) >= 0) {
+    if (this.isPending(postId)) {
       return;
     }
 
@@ -375,6 +385,17 @@ const DownloadManager = new class {
     }
 
     this._notifyProgress(null);
+  }
+
+  /**
+   * @param {number} postId
+   */
+  cancel(postId) {
+    const index = this.queue.indexOf(postId);
+    if (index >= 0) {
+      this.queue.splice(index, 1);
+      this._notifyProgress(null);
+    }
   }
 
   // private
@@ -634,6 +655,14 @@ class DownloadButton {
     this.button = document.createElement("button");
     this.button.addEventListener("click", e => {
       e.preventDefault();
+
+      if (DownloadManager.isPending(this.postId)) {
+        if (confirm(localize("dl_button.cancel"))) {
+          DownloadManager.cancel(this.postId);
+        }
+        return;
+      }
+
       DownloadManager.download(this.postId);
     });
     insertAfter.after(this.button);
