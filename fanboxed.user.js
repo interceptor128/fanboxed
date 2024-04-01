@@ -1101,7 +1101,7 @@ Prefs.load().then(prefs => {
   }
 
   const observer = new MutationObserver(() => {
-    const likeButton = document.querySelector("#root > div > div > div > div > div > div > div > article + div > div > div > div > button");
+    const likeButton = document.querySelector("#root > div > div > div > div > div > div > div > div > article + div > div > div > div > button");
     if (likeButton) {
       if (document.getElementById("fanboxed-download-button")) {
         return;
