@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name        Fanboxed
-// @version     1.1.0
+// @version     1.1.1
 // @homepageURL https://github.com/aznhe21/fanboxed
 // @updateURL   https://raw.githubusercontent.com/aznhe21/fanboxed/master/fanboxed.user.js
 // @downloadURL https://raw.githubusercontent.com/aznhe21/fanboxed/master/fanboxed.user.js
@@ -497,7 +497,7 @@ const DownloadManager = new class {
       throw new Error(localize("api.error", { error: res.error }));
     }
 
-    const raw = res.body;
+    const raw = res.body?.post;
     if (!raw) {
       throw new Error(localize("api.failed"));
     }
